@@ -1,0 +1,17 @@
+[Unit]
+Description=Search Service ARQ Worker
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/search-service
+EnvironmentFile=/opt/search-service/.env
+ExecStart=/opt/search-service/.venv/bin/arq search_service.indexing.tasks.WorkerSettings
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

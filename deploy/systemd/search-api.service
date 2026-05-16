@@ -1,0 +1,21 @@
+[Unit]
+Description=Search Service API (FastAPI + Uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/search-service
+EnvironmentFile=/opt/search-service/.env
+ExecStart=/opt/search-service/.venv/bin/uvicorn search_service.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 1 \
+    --no-access-log
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

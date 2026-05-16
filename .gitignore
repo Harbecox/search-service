@@ -1,0 +1,49 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Data
+data/
+*.qdrant
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Model weights / cache
+.cache/
+models/
+*.bin
+*.safetensors
+*.pt
+*.onnx
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Ruff / mypy
+.ruff_cache/
+.mypy_cache/
+
+# uv
+uv.lock
