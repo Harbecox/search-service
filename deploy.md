@@ -12,6 +12,68 @@
 
 ---
 
+## Шаг 0 — Установить зависимости системы
+
+### Python 3.12
+
+```bash
+sudo apt update
+sudo apt install -y software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv python3.12-dev
+
+# Проверить:
+python3.12 --version
+```
+
+### Docker + Docker Compose
+
+```bash
+# Удалить старые версии если есть:
+sudo apt remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+
+# Установить:
+sudo apt install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Запустить и включить автозапуск:
+sudo systemctl enable --now docker
+
+# Разрешить запуск без sudo (нужно перелогиниться):
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Проверить:
+docker --version
+docker compose version
+```
+
+### uv
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
+
+# Проверить:
+uv --version
+```
+
+### git (если нужен)
+
+```bash
+sudo apt install -y git
+```
+
+---
+
 ## Шаг 1 — Установить uv
 
 ```bash
