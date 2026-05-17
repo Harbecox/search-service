@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 
 import httpx
 import structlog
@@ -9,30 +8,6 @@ import structlog
 from search_service.dto.search import ParsedQuery
 
 log = structlog.get_logger(__name__)
-
-_SYSTEM_PROMPT = """Ты парсер поисковых запросов для интернет-магазина.
-Извлеки структурированные данные из запроса пользователя.
-Верни ТОЛЬКО валидный JSON без пояснений.
-
-Поля:
-- query: string — основной поисковый запрос (без упоминания цены и фильтров)
-- price_min: number или null — минимальная цена если указана
-- price_max: number или null — максимальная цена если указана
-- category: string или null — категория товара если явно указана
-- exclude: array of strings — что исключить (из "не X", "без X", "кроме X")
-
-Примеры:
-Запрос: "хочу дрель до 5000₽, но не ударную и не китайскую"
-Ответ: {"query": "дрель", "price_min": null, "price_max": 5000, "category": null, "exclude": ["ударная", "китайская"]}
-
-Запрос: "автоматический выключатель 16А от 500 до 2000 рублей"
-Ответ: {"query": "автоматический выключатель 16А", "price_min": 500, "price_max": 2000, "category": null, "exclude": []}
-
-Запрос: "розетка уличная без заземления"
-Ответ: {"query": "розетка уличная", "price_min": null, "price_max": null, "category": null, "exclude": ["заземление"]}
-
-Запрос: "болт М6"
-Ответ: {"query": "болт М6", "price_min": null, "price_max": null, "category": null, "exclude": []}"""
 
 
 class OllamaQueryParser:
@@ -43,28 +18,26 @@ class OllamaQueryParser:
 
     async def parse(self, query: str) -> ParsedQuery:
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                response = await client.post(
-                    f"{self._base_url}/api/chat",
-                    json={
-                        "model": self._model,
-                        "stream": False,
-                        "format": "json",
-                        "messages": [
-                            {"role": "system", "content": _SYSTEM_PROMPT},
-                            {"role": "user", "content": query},
-                        ],
-                    },
-                )
-                response.raise_for_status()
-                content = response.json()["message"]["content"]
-                data = json.loads(content)
+            response_text = await self._stream_response(query)
+            data = json.loads(response_text)
+
+            clean_query = str(data.get("query") or query).strip() or query
+            price_min = _to_float(data.get("price_min"))
+            price_max = _to_float(data.get("price_max"))
+
+            # Если модель не очистила query от ценового паттерна — чистим сами
+            if price_min or price_max:
+                import re
+                clean_query = re.sub(
+                    r'\s*(?:от|до)\s+\d[\d\s]*(?:[.,]\d+)?\s*(?:руб(?:лей|ля)?\.?|р\.?|₽)?\s*',
+                    ' ', clean_query, flags=re.IGNORECASE
+                ).strip()
 
             parsed = ParsedQuery(
                 original_query=query,
-                query=str(data.get("query") or query).strip() or query,
-                price_min=_to_float(data.get("price_min")),
-                price_max=_to_float(data.get("price_max")),
+                query=clean_query or query,
+                price_min=price_min,
+                price_max=price_max,
                 category=data.get("category") or None,
                 exclude=[str(e).lower() for e in data.get("exclude", []) if e],
             )
@@ -75,11 +48,38 @@ class OllamaQueryParser:
             log.warning("query_parser_failed", error=str(exc), query=query)
             return ParsedQuery(original_query=query, query=query)
 
+    async def _stream_response(self, query: str) -> str:
+        """Собирает только поле 'response' из стрима, пропуская 'thinking'."""
+        result = ""
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            async with client.stream(
+                "POST",
+                f"{self._base_url}/api/generate",
+                json={
+                    "model": self._model,
+                    "stream": True,
+                    "format": "json",
+                    "prompt": query,
+                },
+            ) as resp:
+                resp.raise_for_status()
+                async for line in resp.aiter_lines():
+                    if not line:
+                        continue
+                    chunk = json.loads(line)
+                    # Собираем только 'response', игнорируем 'thinking'
+                    token = chunk.get("response", "")
+                    if token:
+                        result += token
+                    if chunk.get("done"):
+                        break
+        return result.strip()
+
 
 def _to_float(value: object) -> float | None:
     if value is None:
         return None
     try:
-        return float(value)
+        return float(str(value).replace(" ", "").replace(",", "."))
     except (TypeError, ValueError):
         return None
