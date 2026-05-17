@@ -79,20 +79,18 @@ sudo apt install -y git
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 source $HOME/.local/bin/env
+
+# Проверить:
 uv --version
 ```
 
 ---
 
-## Шаг 2 — Скопировать проект на сервер
+## Шаг 2 — Клонировать репозиторий
 
 ```bash
-# С вашей машины:
-rsync -av --exclude='.venv' --exclude='data/' --exclude='__pycache__' \
-  /home/harbecox/PycharmProjects/AI_SEARCH/ user@SERVER:/opt/search-service/
-
-# Или через git, если репозиторий настроен:
-git clone <repo-url> /opt/search-service
+git clone https://github.com/Harbecox/search-service.git /opt/search-service
+cd /opt/search-service
 ```
 
 ---
@@ -274,8 +272,7 @@ curl -s -X POST http://localhost:8000/search \
 ```bash
 cd /opt/search-service
 
-# Обновить код
-git pull  # или rsync с вашей машины
+git pull origin main
 
 # Обновить зависимости если изменился pyproject.toml
 uv sync

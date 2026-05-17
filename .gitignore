@@ -47,3 +47,5 @@ htmlcov/
 
 # uv
 uv.lock
+
+search-ui
