@@ -96,6 +96,10 @@ class QdrantStore:
         price_range: dict[str, float] = {}
         if filters.price_min is not None:
             price_range["gte"] = filters.price_min
+        else:
+            # Если задан любой ценовой фильтр — исключаем товары без цены (price=0)
+            if filters.price_max is not None:
+                price_range["gt"] = 0.0
         if filters.price_max is not None:
             price_range["lte"] = filters.price_max
         if price_range:
