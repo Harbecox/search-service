@@ -18,6 +18,16 @@ class SearchRequest(BaseModel):
     limit: int = Field(default=10, ge=1, le=100)
     hydrate_from_db: bool = False
     use_reranker: bool = True
+    use_query_parser: bool = False
+
+
+class ParsedQuery(BaseModel):
+    original_query: str
+    query: str
+    price_min: float | None = None
+    price_max: float | None = None
+    category: str | None = None
+    exclude: list[str] = Field(default_factory=list)
 
 
 class SearchHit(BaseModel):
@@ -31,3 +41,4 @@ class SearchResponse(BaseModel):
     hits: list[SearchHit]
     took_ms: float
     reranked: bool
+    parsed_query: ParsedQuery | None = None

@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     # Providers: comma-separated dotted-path class names
     providers_classes: str = ""
 
+    # Ollama query parser
+    ollama_enabled: bool = False
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:3b"
+    ollama_timeout: int = 30
+
 
 _settings: Settings | None = None
 
