@@ -53,11 +53,8 @@ class SearchService:
         search_query = req.query
         effective_filters = req.filters
 
-        use_parser = req.use_query_parser or (
-            self._settings.ollama_enabled and req.use_query_parser
-        )
-
-        if use_parser and self._parser is not None:
+        # Парсить если явно запрошено ИЛИ Ollama включён глобально
+        if (req.use_query_parser or self._settings.ollama_enabled) and self._parser is not None:
             parsed = await self._parser.parse(req.query)
             search_query = parsed.query
 
