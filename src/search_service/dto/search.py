@@ -28,6 +28,10 @@ class ParsedQuery(BaseModel):
     price_max: float | None = None
     category: str | None = None
     exclude: list[str] = Field(default_factory=list)
+    include: list[str] = Field(default_factory=list)
+    brand: str | None = None
+    country: str | None = None
+    amps: float | None = None
 
 
 class SearchHit(BaseModel):
